@@ -2,27 +2,25 @@ from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
-from kivy.core.window import Window
 
 # --- Core calculation functions ---
-def generate_sequence(x, B, percent):
+def generate_sequence(x, B, coeff):
     martingales = []
     cumulative = 0
 
-    if x < 1 or x > B:
+    # Validation
+    if x < 1 or x > B or coeff <= 1:
         return None
 
+    # First lot
     martingales.append(x)
     cumulative += x
-    target_profit = x * (percent / 100.0)
 
+    # Multiply by coefficient until balance exceeded
     while True:
-        required_win = cumulative + target_profit
-        next_lot = required_win / (percent / 100.0)
-
+        next_lot = martingales[-1] * coeff
         if cumulative + next_lot > B:
             break
-
         martingales.append(next_lot)
         cumulative += next_lot
 
@@ -31,28 +29,25 @@ def generate_sequence(x, B, percent):
 def last_term(n):
     return 100 / (2 ** n)
 
-# --- Adaptive font size helper ---
-def adaptive_font(base_ratio=0.08):
-    # Scale font size relative to screen width
-    return int(Window.width * base_ratio)
-
 # --- Kivy Layout ---
 class MartingaleLayout(BoxLayout):
-    def init(self, **kwargs):
-        super().init(orientation="vertical", **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(orientation="vertical", **kwargs)
 
         # --- Input fields ---
         self.first_lot = self.make_input("First Lot ($)")
         self.balance = self.make_input("Balance ($)")
-        self.percent = self.make_input("Percent (%)", text="92")
+        self.coeff = self.make_input("Coefficient", text="2.1")  # Default changed here
 
+        # Bind instant calculation
         self.first_lot.bind(text=self.calculate)
         self.balance.bind(text=self.calculate)
-        self.percent.bind(text=self.calculate)
+        self.coeff.bind(text=self.calculate)
 
+        # Add inputs
         self.add_widget(self.first_lot)
         self.add_widget(self.balance)
-        self.add_widget(self.percent)
+        self.add_widget(self.coeff)
 
         # --- Output labels ---
         self.result_martingales_label = self.make_label("Martingales:")
@@ -65,6 +60,9 @@ class MartingaleLayout(BoxLayout):
         self.result_prob_label = self.make_label("Probability:")
         self.result_prob_value = self.make_label("")
 
+        # Vertical sizing
+        self.result_martingales_label.size_hint_y = 1.0
+        self.result_martingales_value.size_hint_y = 2.0
         for lbl in [
             self.result_sum_label, self.result_sum_value,
             self.result_num_label, self.result_num_value,
@@ -72,6 +70,7 @@ class MartingaleLayout(BoxLayout):
         ]:
             lbl.size_hint_y = 0.8
 
+        # Add outputs
         self.add_widget(self.result_martingales_label)
         self.add_widget(self.result_martingales_value)
         self.add_widget(self.result_sum_label)
@@ -87,10 +86,9 @@ class MartingaleLayout(BoxLayout):
             text=text,
             multiline=False,
             halign="center",
-            font_size=adaptive_font(0.08),  # adaptive font
+            font_size=86,
             background_color=(0.2, 0.2, 0.2, 1),
             foreground_color=(1, 1, 1, 1),
-            size_hint_y=0.8
         )
         inp.bind(size=lambda inst, val: setattr(inst, "padding_y",
                      [(inst.height - inst.line_height) / 2, 0]))
@@ -102,7 +100,7 @@ class MartingaleLayout(BoxLayout):
             halign="center",
             valign="middle",
             color=(1, 1, 1, 1),
-            font_size=adaptive_font(0.07),  # adaptive font
+            font_size=86,
             size_hint_y=size_hint_y
         )
         lbl.bind(size=lambda inst, val: setattr(inst, "text_size", inst.size))
@@ -112,9 +110,10 @@ class MartingaleLayout(BoxLayout):
         try:
             a = float(self.first_lot.text)
             B = float(self.balance.text)
-            y = float(self.percent.text) if self.percent.text else 92
+            c = float(self.coeff.text) if self.coeff.text else 2.1  # Default fallback updated
 
-            sequence = generate_sequence(a, B, y)
+            sequence = generate_sequence(a, B, c)
+            
             if sequence is None:
                 self.result_martingales_value.text = "Invalid input"
                 self.result_sum_value.text = ""
@@ -127,6 +126,7 @@ class MartingaleLayout(BoxLayout):
             num_martingale = len(sequence)
             prob = round(last_term(num_martingale), 3)
 
+            # Display results
             self.result_martingales_value.text = "  ".join(martingales)
             self.result_sum_value.text = str(sum_martingale)
             self.result_num_value.text = str(num_martingale)
@@ -138,9 +138,13 @@ class MartingaleLayout(BoxLayout):
             self.result_num_value.text = ""
             self.result_prob_value.text = ""
 
+# --- App Runner ---
 class MartingaleApp(App):
     def build(self):
         return MartingaleLayout()
 
-if name == "main":
+if __name__ == "__main__":  
     MartingaleApp().run()
+    
+    
+    
