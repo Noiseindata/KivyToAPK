@@ -4,23 +4,30 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 
 # --- Core calculation functions ---
-def generate_sequence(x, B, coeff):
+def generate_sequence(x, B, percent):
     martingales = []
     cumulative = 0
 
     # Validation
-    if x < 1 or x > B or coeff <= 1:
+    if x < 1 or x > B:
         return None
 
     # First lot
     martingales.append(x)
     cumulative += x
 
-    # Multiply by coefficient until balance exceeded
+    # Hypothetical first win profit
+    target_profit = x * (percent / 100.0)
+
     while True:
-        next_lot = martingales[-1] * coeff
+        # Next lot must cover all previous losses + target profit
+        required_win = cumulative + target_profit
+        next_lot = required_win / (percent / 100.0)
+
+        # Check balance
         if cumulative + next_lot > B:
             break
+
         martingales.append(next_lot)
         cumulative += next_lot
 
@@ -31,23 +38,23 @@ def last_term(n):
 
 # --- Kivy Layout ---
 class MartingaleLayout(BoxLayout):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs):   # ✅ fixed
         super().__init__(orientation="vertical", **kwargs)
 
         # --- Input fields ---
         self.first_lot = self.make_input("First Lot ($)")
         self.balance = self.make_input("Balance ($)")
-        self.coeff = self.make_input("Coefficient", text="2.1")  # Default changed here
+        self.percent = self.make_input("Percent (%)", text="92")
 
         # Bind instant calculation
         self.first_lot.bind(text=self.calculate)
         self.balance.bind(text=self.calculate)
-        self.coeff.bind(text=self.calculate)
+        self.percent.bind(text=self.calculate)
 
         # Add inputs
         self.add_widget(self.first_lot)
         self.add_widget(self.balance)
-        self.add_widget(self.coeff)
+        self.add_widget(self.percent)
 
         # --- Output labels ---
         self.result_martingales_label = self.make_label("Martingales:")
@@ -90,6 +97,7 @@ class MartingaleLayout(BoxLayout):
             background_color=(0.2, 0.2, 0.2, 1),
             foreground_color=(1, 1, 1, 1),
         )
+        # Center text vertically
         inp.bind(size=lambda inst, val: setattr(inst, "padding_y",
                      [(inst.height - inst.line_height) / 2, 0]))
         return inp
@@ -103,6 +111,7 @@ class MartingaleLayout(BoxLayout):
             font_size=86,
             size_hint_y=size_hint_y
         )
+        # Ensure valign works by setting text_size
         lbl.bind(size=lambda inst, val: setattr(inst, "text_size", inst.size))
         return lbl
 
@@ -110,9 +119,9 @@ class MartingaleLayout(BoxLayout):
         try:
             a = float(self.first_lot.text)
             B = float(self.balance.text)
-            c = float(self.coeff.text) if self.coeff.text else 2.1  # Default fallback updated
+            y = float(self.percent.text) if self.percent.text else 92
 
-            sequence = generate_sequence(a, B, c)
+            sequence = generate_sequence(a, B, y)
             
             if sequence is None:
                 self.result_martingales_value.text = "Invalid input"
@@ -145,6 +154,4 @@ class MartingaleApp(App):
 
 if __name__ == "__main__":  
     MartingaleApp().run()
-    
-    
     
