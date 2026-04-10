@@ -1,10 +1,10 @@
 [app]
 
 # (str) Title of your application
-title = Martingale_Calculator
+title = Martingale_C
 
 # (str) Package name
-package.name = MartingaleCalculator
+package.name = Martingale_C
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.Noiseindata
