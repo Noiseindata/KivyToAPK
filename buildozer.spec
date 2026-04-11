@@ -1,10 +1,10 @@
 [app]
 
 # (str) Title of your application
-title = Martingale_P
+title = BinaryMart
 
 # (str) Package name
-package.name = Martingale_P
+package.name = BinaryMart
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.Noiseindata
