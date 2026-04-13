@@ -55,14 +55,15 @@ class MartingaleLayout(BoxLayout):
         # Dynamic input row: TextInput + button
         self.dynamic_input = self.make_input("Coefficient", text="2.1")
         self.switch_btn = Button(
-            text="X",  # Default text
-            font_size=146,
+            text="X",
+            font_size=117,
             size_hint=(None, 1),
             width=180,
             height=240,
             background_normal="",
             background_color=(0, 0, 0, 0),
-            color=(0.2, 0.2, 0.2, 1)  # Gray text color
+            color=(0.2, 0.2, 0.2, 1),
+            markup=True
         )
         self.switch_btn.bind(on_press=self.switch_mode)
 
@@ -107,20 +108,30 @@ class MartingaleLayout(BoxLayout):
         sum_count_row.add_widget(sum_box)
         sum_count_row.add_widget(count_box)
 
-        # Martingales section
-        self.result_martingales_label = self.make_label("Martingales:")
-        self.result_martingales_value = self.make_label("", size_hint_y=2.0)
+        # Lots section (valign="top" applied here)
+        self.result_martingales_label = self.make_label("Lots:", size_hint_y=0.4)
+        self.result_martingales_value = Label(
+            text="",
+            halign="center",
+            valign="top",   # <-- align text to top
+            color=(1, 1, 1, 1),
+            font_size=103,
+            size_hint_y=2.6
+        )
+        self.result_martingales_value.bind(size=lambda inst, val: setattr(inst, "text_size", inst.size))
 
         # Probability row
-        self.result_prob_label = self.make_label("Probability:", size_hint_y=0.4)
-        self.result_prob_value = self.make_label("", size_hint_y=0.4)
+        prob_row = BoxLayout(orientation="horizontal", size_hint_y=0.4)
+        self.result_prob_label = self.make_label("Probability:", size_hint_y=1.0)
+        self.result_prob_value = self.make_label("", size_hint_y=1.0)
+        prob_row.add_widget(self.result_prob_label)
+        prob_row.add_widget(self.result_prob_value)
 
         # Add outputs
         self.add_widget(sum_count_row)
         self.add_widget(self.result_martingales_label)
         self.add_widget(self.result_martingales_value)
-        self.add_widget(self.result_prob_label)
-        self.add_widget(self.result_prob_value)
+        self.add_widget(prob_row)
 
     def update_rect(self, instance, value):
         self.rect.pos = instance.pos
@@ -137,14 +148,14 @@ class MartingaleLayout(BoxLayout):
             self.mode = "percent"
             self.dynamic_input.hint_text = "Percent (%)"
             self.dynamic_input.text = "92"
-            self.switch_btn.text = "%"
-            self.switch_btn.color = (0.2, 0.2, 0.2, 1)  # Gray text color
+            self.switch_btn.text = "[b]%[/b]"
+            self.switch_btn.color = (0.2, 0.2, 0.2, 1)
         else:
             self.mode = "coeff"
             self.dynamic_input.hint_text = "Coefficient"
             self.dynamic_input.text = "2.1"
             self.switch_btn.text = "X"
-            self.switch_btn.color = (0.2, 0.2, 0.2, 1)  # Gray text color
+            self.switch_btn.color = (0.2, 0.2, 0.2, 1)
         self.calculate()
 
     def make_input(self, hint, text=""):
@@ -196,12 +207,13 @@ class MartingaleLayout(BoxLayout):
             martingales = [f"{val:.2f}" for val in sequence]
             sum_martingale = round(sum(sequence), 2)
             num_martingale = len(sequence)
-            prob = round(last_term(num_martingale), 3)
+
+            prob = round(100 - last_term(num_martingale), 3)
 
             self.result_martingales_value.text = "  ".join(martingales)
             self.result_sum_value.text = str(sum_martingale)
             self.result_num_value.text = str(num_martingale)
-            self.result_prob_value.text = f"{num_martingale}-th time: {prob}%"
+            self.result_prob_value.text = f"{prob}%"
 
         except ValueError:
             self.result_martingales_value.text = ""
